@@ -15,7 +15,10 @@
     "lib": ["es6", "dom", "es7"],
     "module": "esnext",
     "jsx": "react",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "paths": {
+      "lib/*": ["src/libs/*"]
+    }
   },
   "include": ["./src/**/*"]
 }
