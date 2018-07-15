@@ -70,7 +70,7 @@ export default class Container extends React.PureComponent<IContainerProps, ICon
           });
         }
     }
-  }, 2000);
+  }, 500, {trailing: false});
 
   calculateDirection(): string {
     return 'down';
