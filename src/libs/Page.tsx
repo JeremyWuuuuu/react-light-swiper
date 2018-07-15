@@ -1,5 +1,29 @@
-import * as react from 'React';
+import * as React from 'React';
 
-export default class Page extends react.PureComponent {
-  
+interface IPageProps { };
+
+interface IPageState {
+  height: number;
+ };
+
+export default class Page extends React.PureComponent<IPageProps, IPageState> {
+  constructor(props: IPageProps) {
+    super(props);
+    this.state = {
+      height: window.innerHeight
+    }
+  }
+
+  render() {
+    let pageStyle: React.CSSProperties = {
+      width: '100%',
+      height: '100%',
+      maxHeight: '100%'
+    }
+    return (
+      <div style={pageStyle}>
+        {this.props.children}
+      </div>
+    )
+  }
 }

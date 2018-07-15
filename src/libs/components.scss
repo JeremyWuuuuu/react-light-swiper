@@ -1,0 +1,13 @@
+// root container
+
+.RLS-root-container {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  .RLS-swipe-container {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+  }
+}

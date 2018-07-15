@@ -1,10 +1,10 @@
-import * as react from 'React';
+import * as React from 'React';
 
 interface IDotProps { };
 
 interface IDotState { };
 
-export default class Dot extends react.PureComponent<IDotProps, IDotState> {
+export default class Dot extends React.PureComponent<IDotProps, IDotState> {
   constructor(props: IDotProps) {
     super(props);
   }
