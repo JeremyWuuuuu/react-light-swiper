@@ -8,10 +8,12 @@ interface IContainerProps {
   defaultEntrance?: number; // Define the default entrance index default 0
   totalPage: number; // Total scroll page
   onChangePage?: Function;
+  direction?: 'vertical' | 'horizontal'; // default to 'vertical'
 }
 
 interface IContainerState {
   currentPage: number;
+  direction: 'vertical' | 'horizontal';
 }
 
 export default class Container extends React.PureComponent<IContainerProps, IContainerState> {
@@ -20,7 +22,8 @@ export default class Container extends React.PureComponent<IContainerProps, ICon
   constructor(props: IContainerProps) {
     super(props);
     this.state = {
-      currentPage: props.defaultEntrance ? props.defaultEntrance : 0
+      currentPage: props.defaultEntrance ? props.defaultEntrance : 0,
+      direction: props.direction ? props.direction : 'vertical' 
     }
 
     this.initResizeResponder();
@@ -56,23 +59,29 @@ export default class Container extends React.PureComponent<IContainerProps, ICon
 
   private handleWheel = Throttle((event: React.WheelEvent) => {
     let { currentPage } = this.state;
-    switch (this.calculateDirection()) {
-      case 'down':
+    let {deltaX: x, deltaY: y} = event;
+    switch (this.calculateDirection(x, y)) {
+      case 'down' || 'right' :
         if (currentPage < this.props.totalPage - 1) {
           this.setState({
             currentPage: currentPage++
           });
         }
-      case 'up':
-        if (currentPage !== 0) {
+      case 'up' || 'left' :
+        if (currentPage <= this.state.currentPage && currentPage !== 0) {
           this.setState({
             currentPage: currentPage--
           });
         }
     }
-  }, 500, {trailing: false});
+  }, 1000, {trailing: false});
 
-  calculateDirection(): string {
-    return 'down';
+  calculateDirection(x: number, y: number): string {
+    if (this.state.direction === 'horizontal') {
+      return x > 0 ? 'left' : 'right'
+    } else if (this.state.direction === 'vertical') {
+      return y > 0 ? 'down' : 'up'
+    }
+    throw new Error("Unsupported direction");
   }
 }
