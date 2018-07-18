@@ -21,7 +21,7 @@ export default class Page extends React.PureComponent<IPageProps, IPageState> {
       maxHeight: '100%'
     }
     return (
-      <div style={pageStyle}>
+      <div style={pageStyle} className="RLS-page-container">
         {this.props.children}
       </div>
     )

@@ -14,6 +14,7 @@ interface IContainerProps {
 interface IContainerState {
   currentPage: number;
   direction: 'vertical' | 'horizontal';
+  offset: number;
 }
 
 export default class Container extends React.PureComponent<IContainerProps, IContainerState> {
@@ -22,13 +23,22 @@ export default class Container extends React.PureComponent<IContainerProps, ICon
   private containerHeight: number = 0;
   constructor(props: IContainerProps) {
     super(props);
+
     this.state = {
       currentPage: props.defaultEntrance ? props.defaultEntrance : 0,
-      direction: props.direction ? props.direction : 'vertical' 
+      direction: props.direction ? props.direction : 'vertical',
+      offset: 0
     }
 
     this.initResizeResponder();
     this.handleWheel = this.handleWheel.bind(this);
+  }
+
+  componentDidMount() {
+    this.containerHeight = this.containerRef.current ? this.containerRef.current.offsetHeight : 0;
+    this.setState({
+      offset: this.containerHeight * this.state.currentPage
+    });
   }
 
   render() {
@@ -39,24 +49,22 @@ export default class Container extends React.PureComponent<IContainerProps, ICon
         ref={this.containerRef}
       >
         <div className="RLS-swipe-container" style={{
-          top: `-${this.containerHeight * this.state.currentPage}px`
+          top: `-${this.state.offset}px`
         }}>
           {this.props.children}
-          {indicator ? <Indicator /> : null}
+          {indicator ? <Indicator totalPage={this.props.totalPage} activePage={this.state.currentPage} /> : null}
         </div>
       </div>
     )
   }
 
-  initResizeResponder(): void {
+  private initResizeResponder(): void {
     window.addEventListener('resize', () => {
       this.containerHeight = this.containerRef.current ? this.containerRef.current.offsetHeight : 0;
-      this.forceUpdate();
+      this.setState({
+        offset: this.state.currentPage * this.containerHeight
+      });
     }, false);
-  }
-
-  componentDidMount() {
-    this.containerHeight = this.containerRef.current ? this.containerRef.current.offsetHeight : 0;
   }
 
   private handleWheel = Throttle((event: React.WheelEvent) => {
@@ -65,42 +73,69 @@ export default class Container extends React.PureComponent<IContainerProps, ICon
       return;
     }
     let { currentPage } = this.state;
-    let {deltaX: x, deltaY: y} = event;
+    let { deltaX: x, deltaY: y } = event;
     switch (this.calculateDirection(x, y)) {
       case 'down':
       case 'right':
         if (currentPage < this.props.totalPage - 1) {
-          this.setState({
-            currentPage: currentPage+=1
-          }, () => {
-            this.inTransition = false;
-          });
-          this.inTransition = true;
+          this.goNextPage(currentPage += 1);
         }
         break;
       case 'up':
       case 'left':
         if (currentPage <= this.state.currentPage && currentPage !== 0) {
-          this.setState({
-            currentPage: currentPage-=1
-          }, () => {
-            this.inTransition = false;
-          });
-          this.inTransition = true;
+          this.goPrevPage(currentPage -= 1);
         }
         break;
       default:
         throw new Error('Unsupported direction')
     }
     this.props.onChangePage && this.props.onChangePage();
-  }, 1000, {trailing: false});
+  }, 700, { trailing: false });
 
-  calculateDirection(x: number, y: number): string | null {
+  private calculateDirection(x: number, y: number): string | null {
     if (this.state.direction === 'horizontal') {
       return x > 0 ? 'left' : 'right'
     } else if (this.state.direction === 'vertical') {
       return y > 0 ? 'down' : 'up'
     }
     return null;
+  }
+
+  private goNextPage = (nextPage: number) => {
+    this.setState({
+      currentPage: nextPage
+    }, () => this.inTransition = false);
+    let currentPosition: number = this.state.currentPage * this.containerHeight;
+    let targetPosition: number = nextPage * this.containerHeight;
+    this.inTransition = true;
+    requestAnimationFrame(this.makeAnimation(currentPosition, targetPosition, 30));
+  }
+
+  private goPrevPage = (nextPage: number) => {
+    this.setState({
+      currentPage: nextPage
+    }, () => this.inTransition = false);
+    let currentPosition: number = this.state.currentPage * this.containerHeight;
+    let targetPosition: number = nextPage * this.containerHeight;
+    this.inTransition = true;
+    requestAnimationFrame(this.makeAnimation(currentPosition, targetPosition, 30));
+  }
+
+  private makeAnimation = (currentPos: number, targetPos: number, step: number) => {
+
+    let stepSize: number = (targetPos - currentPos) / step;
+
+    let animation = () => {
+      if (step > 0) {
+        step--;
+        currentPos += stepSize;
+        this.setState({
+          offset: currentPos
+        });
+        requestAnimationFrame(animation);
+      }
+    }
+    return animation
   }
 }
