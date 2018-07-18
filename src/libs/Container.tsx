@@ -18,6 +18,7 @@ interface IContainerState {
 
 export default class Container extends React.PureComponent<IContainerProps, IContainerState> {
   containerRef: React.RefObject<HTMLDivElement> = React.createRef();
+  private inTransition: boolean = false;
   private containerHeight: number = 0;
   constructor(props: IContainerProps) {
     super(props);
@@ -50,6 +51,7 @@ export default class Container extends React.PureComponent<IContainerProps, ICon
   initResizeResponder(): void {
     window.addEventListener('resize', () => {
       this.containerHeight = this.containerRef.current ? this.containerRef.current.offsetHeight : 0;
+      this.forceUpdate();
     }, false);
   }
 
@@ -58,30 +60,47 @@ export default class Container extends React.PureComponent<IContainerProps, ICon
   }
 
   private handleWheel = Throttle((event: React.WheelEvent) => {
+    // Suspend the function when in middle of transition;
+    if (this.inTransition) {
+      return;
+    }
     let { currentPage } = this.state;
     let {deltaX: x, deltaY: y} = event;
     switch (this.calculateDirection(x, y)) {
-      case 'down' || 'right' :
+      case 'down':
+      case 'right':
         if (currentPage < this.props.totalPage - 1) {
           this.setState({
-            currentPage: currentPage++
+            currentPage: currentPage+=1
+          }, () => {
+            this.inTransition = false;
           });
+          this.inTransition = true;
         }
-      case 'up' || 'left' :
+        break;
+      case 'up':
+      case 'left':
         if (currentPage <= this.state.currentPage && currentPage !== 0) {
           this.setState({
-            currentPage: currentPage--
+            currentPage: currentPage-=1
+          }, () => {
+            this.inTransition = false;
           });
+          this.inTransition = true;
         }
+        break;
+      default:
+        throw new Error('Unsupported direction')
     }
+    this.props.onChangePage && this.props.onChangePage();
   }, 1000, {trailing: false});
 
-  calculateDirection(x: number, y: number): string {
+  calculateDirection(x: number, y: number): string | null {
     if (this.state.direction === 'horizontal') {
       return x > 0 ? 'left' : 'right'
     } else if (this.state.direction === 'vertical') {
       return y > 0 ? 'down' : 'up'
     }
-    throw new Error("Unsupported direction");
+    return null;
   }
 }
